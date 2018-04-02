@@ -26,11 +26,14 @@ class Carousel {
         let children = [].slice.call(element.children);
         this.isMobile = false;
         this.currentItem = 0;
+        this.moveCallbacks = [];
+
+        // Modification du DOM
         this.root = this.createDivWithClass('carousel');
         this.container = this.createDivWithClass('carousel__container');
+        this.root.setAttribute('tabindex', '0');
         this.root.appendChild(this.container);
         this.element.appendChild(this.root);
-        this.moveCallbacks = [];
         this.items = children.map((child) => {
             let item = this.createDivWithClass('carousel__item');
             item.appendChild(child);
@@ -39,9 +42,18 @@ class Carousel {
         })
         this.setStyle();
         this.createNavigation();
+
+        // Evenements
         this.moveCallbacks.forEach(cb => cb(0));
         this.onWindowResize();
         window.addEventListener('resize', this.onWindowResize.bind(this));
+        this.root.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'Left') {
+                this.prev();
+            } else if (e.key === 'ArrowRight' || e.key === 'Right') {
+                this.next();
+            }
+        })
     }
 
     /**
@@ -94,11 +106,19 @@ class Carousel {
      */
     gotoItem(index) {
         if (index < 0) {
-            index = this.items.length - this.options.slidesVisible;
+            if (this.options.loop) {
+                index = this.items.length - this.slidesVisible;
+            } else {
+                return;
+            }
         }
         else if (index >= this.items.length ||
-            (this.items[this.currentItem + this.options.slidesVisible] === undefined && index > this.currentItem)) {
-            index = 0;
+            (this.items[this.currentItem + this.slidesVisible] === undefined && index > this.currentItem)) {
+            if (this.options.loop) {
+                index = 0;
+            } else {
+                return;
+            }
         }
         let translateX = index * -100 / this.items.length;
         this.container.style.transform = 'translate3d(' + translateX + '%, 0, 0)';
@@ -158,11 +178,12 @@ document.addEventListener('DOMContentLoaded', function () {
         slidesVisible: 3,
         slidesToScroll: 2,
         loop: true
-    })
+    });
+
     new Carousel(document.querySelector('#carousel2'), {
         slidesVisible: 2,
         slidesToScroll: 2
-    })
+    });
 
     new Carousel(document.querySelector('#carousel3'), {})
 });
